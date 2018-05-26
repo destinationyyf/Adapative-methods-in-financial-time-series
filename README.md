@@ -1,4 +1,4 @@
-# Adapative-methods-in-financial-time-series
+# Adapative methods in financial time series
 
 These are the topics techniques I introduced in the thesis:
 1. Financial time series (ARMA and GARCH); Varying coefficients models
