@@ -1,0 +1,165 @@
+---
+output: pdf_document
+---
+
+# 1 Conditional Heteroscedasticity Models
+
+## 1.1 Model Introduction
+
+We here first define the return or growth rate of a series. For example, if $x_t$ is the value of a stock at time $t$, then the return or relative gain, $y_t$, of the stock at time $t$ is
+
+$$y_t \equiv \frac{x_t-x_{t-1}}{x_{t-1}}$$
+
+The GARCH$(1,1)$ is:
+
+$$y_t = \sigma_t\epsilon_t$$
+$$\sigma_t^2 = \omega + \alpha y_{t-1}^2 + \beta\sigma_{t-1}^2$$
+
+## 1.2 Estimation and Prediction
+
+The standard method of estimating parameters in GARCH$(m,r)$ is conditional maximum likelihood (we can consider ARCH$(m)$ as special case of GARCH$(m,0)$), given by
+
+$$L(\boldsymbol{\alpha, \beta}\ |\ y_1,...y_m) = \prod_{t=m+1}^nf_{\boldsymbol{\alpha,\beta}}(y_t|y_{t-1},...y_{t-m}) $$
+
+and the conditional density is given by (assume first $r$ terms of $\sigma_1^2 =...= \sigma_r^2=0$)
+
+$$y_t\ |\ y_{t-1},...y_{t-m}\sim N(0,\omega + \sum_{j=1}^{m}\alpha_jy_{t-j}^2+\sum_{j=1}^{r}\beta_j\sigma_{t-j}^2)$$
+
+We here only focused on the simplest Garch model GARCH$(1,1)$, the log likelihood of GARCH$(1,1)$ is defined as:
+
+$$
+\begin{aligned}
+l(\omega,\alpha,\beta) & = -\ln L(\omega,\alpha,\beta|y) \\
+& = \frac{n}{2}\ln(2\pi) + \frac{1}{2}\sum_{t=2}^n(\ln(\omega + \alpha y_{t-1}^2+\beta\sigma_{t-1}^2)+\frac{y_t^2}{\omega + \alpha y_{t-1}^2+\beta\sigma_{t-1}^2})
+\end{aligned}
+$$
+
+And we define the estimated $\tilde{\theta}$ on a specific interval $I$ as
+
+$$\tilde{\boldsymbol{\theta}}_I = \mathrm{argmax}\ l_I(\boldsymbol{\theta}) = \mathrm{argmax}\ l_I({\omega,\alpha,\beta})$$
+
+## 1.3 Test of homogeneity
+
+Denote the possible change point set as $\mathcal{T}(I)$ within the interval $I$, every point $\tau\in\mathcal{T}(I)$ splits the interval $I$ into two subintervals $J = [t_0,\tau]$ and $J^c = I\setminus J =[\tau+1,t_1]$, a change point alternative with the location $\tau$ means that there two parameter values satisfies $\boldsymbol{\theta}(t) = \boldsymbol{\theta}_1$ when $t\in J$ and $\boldsymbol{\theta}(t) = \boldsymbol{\theta}_2$ when $t\in J^c$ ($\boldsymbol{\theta}_1\ne\boldsymbol{\theta}_2$).
+
+The LR test statistics can be defined as:
+
+$$
+\begin{aligned}
+T_{I,\tau} & = 2[\mathop{\mathrm{max}}_{\boldsymbol{\theta}_1,\boldsymbol{\theta}_2}\{l_J(\boldsymbol{\theta}_1) + l_{J^c}(\boldsymbol{\theta}_2)\}-\mathop{\mathrm{max}}_{\boldsymbol{\theta}}l_I(\boldsymbol{\theta})] \\
+& = 2[l_J(\boldsymbol{\tilde\theta}_1) + l_{J^c}(\boldsymbol{\tilde\theta}_2) -l_I(\boldsymbol{\tilde\theta}_I) ]
+\end{aligned}
+$$
+
+We should define the final test statistics as the maximum of all possible points over $\tau\in\mathcal{T}(I)$.
+
+$$T_I = \mathop{\mathrm{max}}_{\tau\in\mathcal{T}(I)}T_{I,\tau}$$
+
+A change point is detected within $I$ if the test statistics $T_I$ exceeds a critical value $\xi$.
+
+# 2. Adaptive Nonparametric Estimation
+
+## 2.1 Choice of critical value
+
+Since we have no information on the distribution of our test statistics, here we use paramtric bootstrap to simulate the critical value.
+
+The algorithms:
+
+1. Given $\boldsymbol{\theta}_I = (\alpha,\beta,\omega)$ (assumed known) and $n = |I|$(the length of the interval), generate GARCH$(1,1)$ series.
+
+2. Split the interval into 10 subintervals with points $\tau\in\mathcal{T}(I) =[ n/10,2n/10,...,9n/10]$, estimate corresponding parameters $\boldsymbol{\tilde\theta}_1, \boldsymbol{\tilde\theta}_2$ using every possible $\tau$, calculate the test statistics $T_{I,\tau} = 2[l_J(\boldsymbol{\tilde\theta}_1) + l_{J^c}(\boldsymbol{\tilde\theta}_2) -l_I(\boldsymbol{\hat\theta}_I) ]$. Thus, we can have the maximal value of test statistics as $T_I$
+
+3. Repeat Step1~2 $B$ times (Take $B = 200$), obtain the 10th($95\%$ percentile) largest value as the critical value
+
+4. Repeat Step1~3 with different values of $n = |I|$ and $\boldsymbol{\theta} = (\alpha,\beta,\omega)$, obtain critical values under different conditions
+
+With $n = 100$, $\omega = 0.1$ and different values of $\alpha$ and $\beta$, the following are points and smoothed estimated curves of $T_{I,\tau}$ without step3.
+
+\begin{figure}
+\includegraphics[width=4in]{Rplot1.png}\centering
+\caption{Different critical values in terms of position, alpha and beta (n=100)}
+\end{figure}
+
+\newpage
+
+Table: Test statistics with different alpha, beta and interval length
+
+```{r, echo=F}
+library(pander)
+result1 = matrix(c(8.803278,9.178828,9.388044,9.189999,8.861648,9.530415,9.630693,8.938426 ,9.643657,10.249655,10.276272,9.485980,8.846248,9.474004,9.705862,9.015455,10.357144,10.982960, 11.262894, 11.117303),nrow = 4, ncol = 5)
+colnames(result1) = c("n = 50","n = 100", "n = 200", "n = 400", "n = 800")
+row.names(result1) = c("alpha = 0.1, beta = 0.8","alpha = 0.2, beta = 0.7",
+                     "alpha = 0.3, beta = 0.6","alpha = 0.7, beta = 0.1")
+pander(result1)
+```
+
+We here simply fit a linear regression model to estimate critical value. The following is the model summary:
+
+$$\mathrm{crit\  value} = \underset{(.1504)}{-10.31}+\underset{(2.52*10^{-5})}{0.0021n}+\underset{(0.012)}{24.48\alpha}+\underset{(0.012)}{20.73\beta}\ \ (R^2 = 0.6731)$$
+(Lower parenthesis show the p-values for corresponding covariate, and the total adjusted $R^2$ is $0.6731$)
+
+## 2.2 Choice of homogeneous interval
+
+The procedures are as followed:
+
+1. Set $k=2$
+
+2. Select interval $I_k = [t_k,T]$ and possible change points set $\mathcal{T}(I_k) = I_{k-1} \setminus I_{k-2}$
+
+\newpage
+
+3. Based on the test of homogeneity within $I_k$ against change-point alternative mentioned above and corresponding critical value $\xi_k$ obtained by bootstrap, acquire test statistics $T_{I_k}$ and determine whether or not reject the null hypothese
+
+4. If a change point is detected for $I_k$, namely in $\mathcal{T}(I_k) = I_{k-1} \setminus I_{k-2}$, then set $\hat{I}_k = I_{k-2} = [t_{k-2},T]$ as our final invertal for estimation and terminate the loop. Otherwise, increase $k = k+1$ and do the detection again, continue with the step until $k>K$
+
+## 2.3 Prediction and Error
+
+The prediction is given by
+
+$$\hat{\sigma}_{t+1}^2 = \hat{\omega} + \hat{\alpha}y_{t}^2+\hat{\beta}\hat{\sigma}_t^2 $$
+
+Therefore, following the above theory and algorithms, here is how we obtain the prediction.
+
+1. We always assume the log returns of the original data follows GARCH model. Transfer the data $x_t$ into the form of log returns: $y_t = \nabla \mathrm{log}(x_t)$
+
+2. Parametric GARCH$(1,1)$: Estimate a GARCH$(1,1)$ model for the entire data sequence $y_t$.
+
+3. Stepwise parametric GARCH$(1,1)$: We make estimation at every datapoint only use the former data.
+
+4. Adaptive nonparametric GARCH$(1,1)$: Similar as 2, we do estimation at every timepoint $T$, but using the algorithm we have discussed above: determine the time homogeneous interval first, then do estimation and prediction.
+
+4. In order to decrease the randomness effect between predictions $\hat{\sigma}_t^2$ and log returns $y_t$, we here use the average the prediction errors over one month throughout the time span to better display the outcome.
+
+## 2.4 Alternative Models
+
+### 2.4.1 Local Linear Regression
+
+Given data $\{(x_i,Y_i)\ i=1...n\}$ with $x_i$'s fixed, we can use local linear regression to estimate $\hat{Y}$ of given $x$. The purpose of local linear regression is to minimize the weighted sum of squares
+
+$$\hat{\alpha},\hat{\beta} = \mathrm{argmin}\sum_{i=1}^nw_i(x)(Y_i-(\alpha+\beta x))^2$$
+
+in which the weight function $w_i(x)=K((x_i-x)/h)$ is a kernel function with bandwidth $h$.
+
+### 2.4.2 Wavelets
+
+The potential problem of local linear regression is that, though categorized as nonparametric method, it has a fixed parameter which is the bandwidth $h$. We can use leave-one-out cross-validation or generalized cross-validation to choose the optimal $h$, but still in some situations the local linear method is not performing well.
+
+# 3 Real-time Application: Dow Jones Stock Index
+
+We here apply the real time series consisting of log-returns of the Dow Jones Industrial Average in recent 5 years.
+
+The data ranges from 04/18/2013 to 04/17/2018, with 1259 time points in total. Shown in "Figure 2", left is the stock index, right is the corresponding returns.
+
+Left part of "Figure 3" shows the errors ratio among three methods: parametric GARCH (global paramters), stepwise GARCH (only use data of former time-points) and our suggested adaptive GARCH. Right part shows the error ratios of local linear, stepwise local linear, wavelets regression with the stepwise GARCH.
+
+\begin{figure}
+\includegraphics[width=4.5in]{222.png}\centering
+\caption{Stock index and returns}
+\end{figure}
+
+\begin{figure}
+\includegraphics[width=5.3in]{111.png}\centering
+\caption{The ratio of squared errors among all methods}
+\end{figure}
+
+
