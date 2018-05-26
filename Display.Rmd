@@ -2,6 +2,19 @@
 output: pdf_document
 ---
 
+# 0 Varying Coefficients Models
+
+Four classical types of varying coefficients models:
+
+* Change point in linear models;
+* Change point in frequencies;
+* Constantly change in frequencies;
+* Change in volatility in time series;
+
+\begin{center}
+\includegraphics[width=5.3in]{Rplot01.jpeg}
+\end{center}
+
 # 1 Conditional Heteroscedasticity Models
 
 ## 1.1 Model Introduction
